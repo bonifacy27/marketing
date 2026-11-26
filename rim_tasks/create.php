@@ -233,9 +233,6 @@ if ($isPost && $available) {
 if (!$isPost && isset($_GET['submitted']) && is_string($_GET['submitted'])) {
     $result = $drafts[$_GET['submitted']]['result'] ?? null;
 }
-if ($result && $result['started']) {
-    LocalRedirect('/my_requests/my_requests.php', false, '303 See Other');
-}
 if ($result && $isPost) {
     LocalRedirect($formPath . '?submitted=' . $token, false, '303 See Other');
 }
@@ -284,7 +281,12 @@ $APPLICATION->SetTitle('Заявка на изготовление реклам�
             <?php if ($isPost && $available): ?><p>Перед повторной отправкой прикрепите файлы заново.</p><?php endif; ?>
         </div>
     <?php endif; ?>
-    <?php if ($result): ?>
+    <?php if ($result && $result['started']): ?>
+        <div class="rim-card">
+            <p role="status">Заявка №<?= $h($result['id']) ?> успешно создана. Бизнес-процесс запущен.</p>
+            <a class="rim-primary" href="/my_requests/my_requests.php">Вернуться к моим запросам</a>
+        </div>
+    <?php elseif ($result): ?>
         <div class="rim-card rim-error" role="alert">
             <p>Заявка №<?= $h($result['id']) ?> создана, но запуск бизнес-процесса не подтверждён.</p>
             <ul>
