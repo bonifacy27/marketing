@@ -231,11 +231,9 @@ $APPLICATION->SetTitle('Заявка на изготовление реклам�
 .rim legend {padding: 0 8px; font-weight: 700}
 .rim [hidden] {display: none}
 .rim-fields {min-width: 0; margin: 0; padding: 0; border: 0}
-.rim-details {display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px}
 .rim-stack {display: grid; gap: 16px; align-content: start}
 .rim-dates {margin-top: 16px; max-width: 320px}
 @media (max-width: 600px) {
-    .rim-details {grid-template-columns: 1fr}
     .rim-dates {max-width: none}
 }
 .rim-grid {display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,220px),1fr)); gap: 16px}
@@ -316,21 +314,19 @@ $APPLICATION->SetTitle('Заявка на изготовление реклам�
 
                 <fieldset class="rim-card">
                     <legend>Данные заявки</legend>
-                    <div class="rim-details">
+                    <div class="rim-stack">
                         <label>
                             <span>Тема *</span>
                             <input type="text" name="TEMA" value="<?= $h($values['TEMA']) ?>" required>
                         </label>
-                        <div class="rim-stack">
-                            <label>
-                                <span>Описание</span>
-                                <textarea name="PREVIEW_TEXT" rows="5"><?= $h($values['PREVIEW_TEXT']) ?></textarea>
-                            </label>
-                            <label>
-                                <span>Номер проекта<?= $required['NOMER_PROEKTA'] ? ' *' : '' ?></span>
-                                <input type="text" name="NOMER_PROEKTA" value="<?= $h($values['NOMER_PROEKTA']) ?>" <?= $required['NOMER_PROEKTA'] ? 'required' : '' ?>>
-                            </label>
-                        </div>
+                        <label>
+                            <span>Описание</span>
+                            <textarea name="PREVIEW_TEXT" rows="5"><?= $h($values['PREVIEW_TEXT']) ?></textarea>
+                        </label>
+                        <label>
+                            <span>Номер проекта<?= $required['NOMER_PROEKTA'] ? ' *' : '' ?></span>
+                            <input type="text" name="NOMER_PROEKTA" value="<?= $h($values['NOMER_PROEKTA']) ?>" <?= $required['NOMER_PROEKTA'] ? 'required' : '' ?>>
+                        </label>
                     </div>
                     <div class="rim-stack rim-dates">
                         <?php foreach (['DATA_GOTOVNOSTI_MATERIALOV_RK', 'DATA_ZAPUSKA_AKTIVNOSTI', 'DATA_ZAVERSHENIYA_AKTIVNOSTI'] as $code): ?>
