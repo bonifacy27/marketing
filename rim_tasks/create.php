@@ -261,6 +261,8 @@ $APPLICATION->SetTitle('Заявка на изготовление реклам�
 .rim label span {display: block; margin-bottom: 6px; font-weight: 600}
 .rim input:not([type=checkbox]):not([type=radio]), .rim textarea {display: block; box-sizing: border-box; width: 100%; font: inherit; padding: 9px; border: 1px solid #a8b6c6; border-radius: 6px}
 .rim textarea {resize: vertical}
+.rim-file-list {margin: 6px 0 0; padding-inline-start: 20px; overflow-wrap: anywhere}
+.rim-file-list:empty {margin: 0}
 .rim-options {display: flex; flex-wrap: wrap; gap: 10px 20px}
 .rim-options label {display: inline-flex; gap: 6px; align-items: baseline}
 .rim-actions {display: flex; gap: 16px; flex-wrap: wrap; align-items: center}
@@ -284,7 +286,7 @@ $APPLICATION->SetTitle('Заявка на изготовление реклам�
     <?php if ($result && $result['started']): ?>
         <div class="rim-card">
             <p role="status">Заявка №<?= $h($result['id']) ?> успешно создана. Бизнес-процесс запущен.</p>
-            <a class="rim-primary" href="/my_requests/my_requests.php">Вернуться к моим запросам</a>
+            <a class="rim-primary" href="/my_requests/my_requests.php">Вернуться</a>
         </div>
     <?php elseif ($result): ?>
         <div class="rim-card rim-error" role="alert">
@@ -326,8 +328,14 @@ $APPLICATION->SetTitle('Заявка на изготовление реклам�
                 <fieldset class="rim-card">
                     <legend>Бриф и документы</legend>
                     <div class="rim-grid">
-                        <label><span>Бриф *</span><input id="rim-brief-file" type="file" name="BRIF[]" required <?= $multiple['BRIF'] ? 'multiple' : '' ?>></label>
-                        <label><span>Иные документы<?= $required['INYE_DOKUMENTY'] ? ' *' : '' ?></span><input type="file" name="INYE_DOKUMENTY[]" <?= $required['INYE_DOKUMENTY'] ? 'required' : '' ?> <?= $multiple['INYE_DOKUMENTY'] ? 'multiple' : '' ?>></label>
+                        <div>
+                            <label><span>Бриф *</span><input id="rim-brief-file" type="file" name="BRIF[]" aria-describedby="rim-brief-files" required <?= $multiple['BRIF'] ? 'multiple' : '' ?>></label>
+                            <ul class="rim-file-list" id="rim-brief-files" aria-live="polite"></ul>
+                        </div>
+                        <div>
+                            <label><span>Иные документы<?= $required['INYE_DOKUMENTY'] ? ' *' : '' ?></span><input type="file" name="INYE_DOKUMENTY[]" aria-describedby="rim-other-files" <?= $required['INYE_DOKUMENTY'] ? 'required' : '' ?> <?= $multiple['INYE_DOKUMENTY'] ? 'multiple' : '' ?>></label>
+                            <ul class="rim-file-list" id="rim-other-files" aria-live="polite"></ul>
+                        </div>
                     </div>
                 </fieldset>
 
@@ -388,6 +396,28 @@ $APPLICATION->SetTitle('Заявка на изготовление реклам�
                 yes.checked = true;
                 update();
                 document.getElementById('rim-brief-file').focus();
+            });
+            const sizeFormat = new Intl.NumberFormat('ru-RU', {maximumFractionDigits: 1});
+            const formatSize = bytes => {
+                if (bytes >= 1024 ** 3) return sizeFormat.format(bytes / 1024 ** 3) + ' ГБ';
+                if (bytes >= 1024 ** 2) return sizeFormat.format(bytes / 1024 ** 2) + ' МБ';
+                if (bytes >= 1024) return sizeFormat.format(bytes / 1024) + ' КБ';
+                return sizeFormat.format(bytes) + ' Б';
+            };
+
+            fields.querySelectorAll('input[type="file"]').forEach(input => {
+                const list = document.getElementById(input.getAttribute('aria-describedby'));
+                const updateFiles = () => {
+                    list.textContent = '';
+                    for (const file of input.files) {
+                        const item = document.createElement('li');
+                        item.textContent = file.name + ' — ' + formatSize(file.size);
+                        list.appendChild(item);
+                    }
+                };
+                input.addEventListener('change', updateFiles);
+                window.addEventListener('pageshow', updateFiles);
+                updateFiles();
             });
             window.addEventListener('pageshow', update);
             update();
