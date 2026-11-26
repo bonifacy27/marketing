@@ -172,18 +172,27 @@ if ($isPost && $available) {
 
         if (!$errors) {
             $element = new CIBlockElement();
-            $id = $element->Add([
-                'IBLOCK_ID' => $listId,
-                'NAME' => $values['TEMA'],
-                'ACTIVE' => 'Y',
-                'CREATED_BY' => $USER->GetID(),
-                'MODIFIED_BY' => $USER->GetID(),
-                'PREVIEW_TEXT' => $values['PREVIEW_TEXT'],
-                'PREVIEW_TEXT_TYPE' => 'text',
-                'PROPERTY_VALUES' => $propertyValues,
-            ], false, true, true);
+            $id = false;
+            try {
+                $id = $element->Add([
+                    'IBLOCK_ID' => $listId,
+                    'NAME' => $values['TEMA'],
+                    'ACTIVE' => 'Y',
+                    'CREATED_BY' => $USER->GetID(),
+                    'MODIFIED_BY' => $USER->GetID(),
+                    'PREVIEW_TEXT' => $values['PREVIEW_TEXT'],
+                    'PREVIEW_TEXT_TYPE' => 'text',
+                    'PROPERTY_VALUES' => $propertyValues,
+                ], false, true, true);
+            } catch (Throwable $exception) {
+                AddMessage2Log($exception->getMessage(), 'rim_tasks');
+                $errors[] = 'Не удалось подтвердить сохранение заявки. Проверьте раздел «Мои заявки» перед повторной отправкой.';
+            }
             if (!$id) {
-                $errors[] = 'Не удалось создать заявку. ' . $element->LAST_ERROR;
+                if (!$errors) {
+                    $details = trim(strip_tags(str_replace(['<br>', '<br />'], ' ', (string)$element->LAST_ERROR)));
+                    $errors[] = 'Не удалось создать заявку. ' . ($details ?: 'Битрикс не вернул причину ошибки.');
+                }
             } else {
                 // Record the saved item before launching the workflow, so replaying the form cannot create another item.
                 $result = ['id' => (int)$id, 'started' => false];
@@ -199,9 +208,20 @@ if ($isPost && $available) {
                     $result['started'] = (bool)$workflow;
                     if (!$workflow) {
                         AddMessage2Log(['element' => $id, 'errors' => $workflowErrors], 'rim_tasks');
+                        $result['diagnostics'] = [];
+                        foreach (array_slice($workflowErrors, 0, 3) as $error) {
+                            $message = trim(strip_tags((string)($error['message'] ?? '')));
+                            if ($message !== '') {
+                                $result['diagnostics'][] = $message;
+                            }
+                        }
+                        if (!$result['diagnostics']) {
+                            $result['diagnostics'][] = 'Битрикс не вернул причину ошибки запуска.';
+                        }
                     }
                 } catch (Throwable $exception) {
-                    AddMessage2Log($exception->getMessage(), 'rim_tasks');
+                    AddMessage2Log(['element' => $id, 'error' => $exception->getMessage()], 'rim_tasks');
+                    $result['diagnostics'] = ['При запуске произошла внутренняя ошибка. Подробности записаны в журнал.'];
                 }
                 $drafts[$token]['result'] = $result;
             }
@@ -209,11 +229,14 @@ if ($isPost && $available) {
     }
 }
 
-if ($result && $isPost) {
-    LocalRedirect('/rim_tasks/create.php?submitted=' . $token, false, '303 See Other');
-}
 if (!$isPost && isset($_GET['submitted']) && is_string($_GET['submitted'])) {
     $result = $drafts[$_GET['submitted']]['result'] ?? null;
+}
+if ($result && $result['started']) {
+    LocalRedirect('/my_requests/my_requests.php', false, '303 See Other');
+}
+if ($result && $isPost) {
+    LocalRedirect('/rim_tasks/create.php?submitted=' . $token, false, '303 See Other');
 }
 
 if ($available && !$result && (!$token || !$isPost)) {
@@ -261,11 +284,13 @@ $APPLICATION->SetTitle('Заявка на изготовление реклам�
         </div>
     <?php endif; ?>
     <?php if ($result): ?>
-        <div class="rim-card" role="status">
-            <p>Заявка №<?= $h($result['id']) ?> создана.</p>
-            <p><?= $result['started']
-                ? 'Бизнес-процесс запущен.'
-                : 'Не удалось подтвердить запуск бизнес-процесса. Проверьте его состояние в созданной заявке.' ?></p>
+        <div class="rim-card rim-error" role="alert">
+            <p>Заявка №<?= $h($result['id']) ?> создана, но запуск бизнес-процесса не подтверждён.</p>
+            <ul>
+                <?php foreach ($result['diagnostics'] ?? ['Проверьте состояние процесса в созданной заявке.'] as $message): ?>
+                    <li><?= $h($message) ?></li>
+                <?php endforeach; ?>
+            </ul>
             <p><a href="/bizproc/processes/322/element/0/<?= $h($result['id']) ?>/">Открыть заявку</a></p>
             <a href="/rim_tasks/create.php">Создать ещё заявку</a>
         </div>
