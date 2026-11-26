@@ -230,6 +230,15 @@ $APPLICATION->SetTitle('Заявка на изготовление реклам�
 .rim a {color: #1754a6}
 .rim-card {margin: 16px 0; padding: 20px; border: 1px solid #d9e2ed; border-radius: 12px; background: #fff}
 .rim legend {padding: 0 8px; font-weight: 700}
+.rim [hidden] {display: none}
+.rim-fields {min-width: 0; margin: 0; padding: 0; border: 0}
+.rim-details {display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px}
+.rim-stack {display: grid; gap: 16px; align-content: start}
+.rim-dates {margin-top: 16px; max-width: 320px}
+@media (max-width: 600px) {
+    .rim-details {grid-template-columns: 1fr}
+    .rim-dates {max-width: none}
+}
 .rim-grid {display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,220px),1fr)); gap: 16px}
 .rim label span {display: block; margin-bottom: 6px; font-weight: 600}
 .rim input:not([type=checkbox]):not([type=radio]), .rim textarea {display: block; box-sizing: border-box; width: 100%; font: inherit; padding: 9px; border: 1px solid #a8b6c6; border-radius: 6px}
@@ -262,53 +271,88 @@ $APPLICATION->SetTitle('Заявка на изготовление реклам�
             <?= bitrix_sessid_post() ?>
             <input type="hidden" name="request_token" value="<?= $h($token) ?>">
             <fieldset class="rim-card">
-                <legend>Бриф и документы</legend>
-                <p id="rim-brief-question">У вас есть готовый файл с брифом?</p>
-                <div class="rim-options" role="group" aria-labelledby="rim-brief-question">
+                <legend>У вас есть готовый файл с брифом?</legend>
+                <div class="rim-options">
                     <label><input type="radio" name="brief_answer" value="yes" required <?= $briefAnswer === 'yes' ? 'checked' : '' ?>> Да</label>
                     <label><input type="radio" name="brief_answer" value="no" <?= $briefAnswer === 'no' ? 'checked' : '' ?>> Нет</label>
                 </div>
-                <p id="rim-brief-help"><a href="/forms/marketing/brief_gen.html" target="_blank" rel="noopener">Создать бриф в новой вкладке</a>. Скачайте XLSX и прикрепите его в поле «Бриф».</p>
-                <div class="rim-grid">
-                    <label><span>Бриф *</span><input type="file" name="BRIF[]" required <?= $multiple['BRIF'] ? 'multiple' : '' ?>></label>
-                    <label><span>Иные документы<?= $required['INYE_DOKUMENTY'] ? ' *' : '' ?></span><input type="file" name="INYE_DOKUMENTY[]" <?= $required['INYE_DOKUMENTY'] ? 'required' : '' ?> <?= $multiple['INYE_DOKUMENTY'] ? 'multiple' : '' ?>></label>
+                <div id="rim-brief-help" <?= $briefAnswer === 'no' ? '' : 'hidden' ?>>
+                    <p><a href="/forms/marketing/brief_gen.html" target="_blank" rel="noopener">Создать бриф в новой вкладке</a>. Скачайте XLSX и вернитесь, чтобы прикрепить его к заявке.</p>
+                    <button type="button" id="rim-brief-ready">Бриф готов, продолжить</button>
                 </div>
+                <noscript><p>Включите JavaScript, чтобы перейти к заполнению заявки.</p></noscript>
             </fieldset>
 
-            <fieldset class="rim-card">
-                <legend>Центры компетенций<?= $required['TSENTRY_KOMPETENTSIY'] ? ' *' : '' ?></legend>
-                <div class="rim-options">
-                    <?php foreach ($centres as $key => $name): ?>
-                        <label><input type="checkbox" name="TSENTRY_KOMPETENTSIY[]" value="<?= $h($key) ?>" <?= in_array((string)$key, $selected, true) ? 'checked' : '' ?>> <?= $h($name) ?></label>
-                    <?php endforeach; ?>
-                </div>
-            </fieldset>
+            <fieldset class="rim-fields" id="rim-request-fields" <?= $briefAnswer === 'yes' ? '' : 'hidden disabled' ?>>
+                <fieldset class="rim-card">
+                    <legend>Бриф и документы</legend>
+                    <div class="rim-grid">
+                        <label><span>Бриф *</span><input id="rim-brief-file" type="file" name="BRIF[]" required <?= $multiple['BRIF'] ? 'multiple' : '' ?>></label>
+                        <label><span>Иные документы<?= $required['INYE_DOKUMENTY'] ? ' *' : '' ?></span><input type="file" name="INYE_DOKUMENTY[]" <?= $required['INYE_DOKUMENTY'] ? 'required' : '' ?> <?= $multiple['INYE_DOKUMENTY'] ? 'multiple' : '' ?>></label>
+                    </div>
+                </fieldset>
 
-            <fieldset class="rim-card">
-                <legend>Данные заявки</legend>
-                <div class="rim-grid">
-                    <?php foreach ($textFields as $code => $label): ?>
-                        <?php if ($code === 'PREVIEW_TEXT') { continue; } ?>
-                        <?php $mandatory = $code === 'TEMA' || $required[$code]; ?>
+                <fieldset class="rim-card">
+                    <legend>Центры компетенций<?= $required['TSENTRY_KOMPETENTSIY'] ? ' *' : '' ?></legend>
+                    <div class="rim-options">
+                        <?php foreach ($centres as $key => $name): ?>
+                            <label><input type="checkbox" name="TSENTRY_KOMPETENTSIY[]" value="<?= $h($key) ?>" <?= in_array((string)$key, $selected, true) ? 'checked' : '' ?>> <?= $h($name) ?></label>
+                        <?php endforeach; ?>
+                    </div>
+                </fieldset>
+
+                <fieldset class="rim-card">
+                    <legend>Данные заявки</legend>
+                    <div class="rim-details">
                         <label>
-                            <span><?= $h($label) ?><?= $mandatory ? ' *' : '' ?></span>
-                            <input type="<?= strpos($code, 'DATA_') === 0 ? 'date' : 'text' ?>" name="<?= $h($code) ?>" value="<?= $h($values[$code]) ?>" <?= $mandatory ? 'required' : '' ?>>
+                            <span>Тема *</span>
+                            <input type="text" name="TEMA" value="<?= $h($values['TEMA']) ?>" required>
                         </label>
-                    <?php endforeach; ?>
+                        <div class="rim-stack">
+                            <label>
+                                <span>Описание</span>
+                                <textarea name="PREVIEW_TEXT" rows="5"><?= $h($values['PREVIEW_TEXT']) ?></textarea>
+                            </label>
+                            <label>
+                                <span>Номер проекта<?= $required['NOMER_PROEKTA'] ? ' *' : '' ?></span>
+                                <input type="text" name="NOMER_PROEKTA" value="<?= $h($values['NOMER_PROEKTA']) ?>" <?= $required['NOMER_PROEKTA'] ? 'required' : '' ?>>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="rim-stack rim-dates">
+                        <?php foreach (['DATA_GOTOVNOSTI_MATERIALOV_RK', 'DATA_ZAPUSKA_AKTIVNOSTI', 'DATA_ZAVERSHENIYA_AKTIVNOSTI'] as $code): ?>
+                            <label>
+                                <span><?= $h($textFields[$code]) ?><?= $required[$code] ? ' *' : '' ?></span>
+                                <input type="date" name="<?= $h($code) ?>" value="<?= $h($values[$code]) ?>" <?= $required[$code] ? 'required' : '' ?>>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                </fieldset>
+                <div class="rim-actions">
+                    <button type="submit">Создать заявку и запустить процесс</button>
+                    <span>* Обязательные поля</span>
                 </div>
-                <p><label><span>Описание</span><textarea name="PREVIEW_TEXT" rows="5"><?= $h($values['PREVIEW_TEXT']) ?></textarea></label></p>
             </fieldset>
-            <div class="rim-actions">
-                <button type="submit">Создать заявку и запустить процесс</button>
-                <span>* Обязательные поля</span>
-            </div>
         </form>
         <script>
         (() => {
-            const answers = document.querySelectorAll('.rim input[name="brief_answer"]');
+            const fields = document.getElementById('rim-request-fields');
             const help = document.getElementById('rim-brief-help');
-            const update = () => { help.hidden = !answers[1].checked; };
-            answers.forEach(answer => answer.addEventListener('change', update));
+            const yes = fields.form.elements.brief_answer[0];
+            const no = fields.form.elements.brief_answer[1];
+            const update = () => {
+                fields.hidden = !yes.checked;
+                fields.disabled = !yes.checked;
+                help.hidden = !no.checked;
+            };
+            yes.addEventListener('change', update);
+            no.addEventListener('change', update);
+            document.getElementById('rim-brief-ready').addEventListener('click', () => {
+                yes.checked = true;
+                update();
+                document.getElementById('rim-brief-file').focus();
+            });
+            window.addEventListener('pageshow', update);
             update();
         })();
         </script>
