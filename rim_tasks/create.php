@@ -5,7 +5,6 @@ use Bitrix\Main\Loader;
 
 $listId = 322;
 $templateId = 865;
-$listUrl = '/bizproc/processes/322/view/0/?list_section_id=';
 
 \Bitrix\Main\Context::getCurrent()->getResponse()->addHeader('Cache-Control', 'no-store');
 
@@ -246,11 +245,17 @@ $APPLICATION->SetTitle('Заявка на изготовление реклам�
 .rim-options {display: flex; flex-wrap: wrap; gap: 10px 20px}
 .rim-options label {display: inline-flex; gap: 6px; align-items: baseline}
 .rim-actions {display: flex; gap: 16px; flex-wrap: wrap; align-items: center}
-.rim button {padding: 11px 17px; background: #1754a6; color: #fff; border: 0; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 700}
+.rim button, .rim a.rim-primary {padding: 11px 17px; background: #1754a6; color: #fff; border: 0; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 700}
+.rim a.rim-primary {display: inline-block; text-decoration: none}
+.rim a.rim-primary:hover {background: #103e7c}
+.rim-brief-help {margin-top: 16px; padding: 16px; border: 1px solid #90afe0; border-left: 4px solid #1754a6; border-radius: 8px; background: #eef5ff}
+.rim-brief-help h2 {margin: 0; font-size: 1.15rem}
+.rim-brief-help ol {margin: 12px 0 16px; padding-left: 24px}
+.rim-brief-help li + li {margin-top: 8px}
+.rim button.rim-secondary {border: 1px solid #1754a6; background: #fff; color: #1754a6}
 .rim-error {background: #fff2f1; border-color: #f3b4ae}
 </style>
 <div class="rim">
-    <a href="<?= $h($listUrl) ?>">К списку заявок</a>
     <?php if ($errors): ?>
         <div class="rim-card rim-error" role="alert">
             <ul><?php foreach ($errors as $error): ?><li><?= $h($error) ?></li><?php endforeach; ?></ul>
@@ -276,10 +281,18 @@ $APPLICATION->SetTitle('Заявка на изготовление реклам�
                     <label><input type="radio" name="brief_answer" value="yes" required <?= $briefAnswer === 'yes' ? 'checked' : '' ?>> Да</label>
                     <label><input type="radio" name="brief_answer" value="no" <?= $briefAnswer === 'no' ? 'checked' : '' ?>> Нет</label>
                 </div>
-                <div id="rim-brief-help" <?= $briefAnswer === 'no' ? '' : 'hidden' ?>>
-                    <p><a href="/forms/marketing/brief_gen.html" target="_blank" rel="noopener">Создать бриф в новой вкладке</a>. Скачайте XLSX и вернитесь, чтобы прикрепить его к заявке.</p>
-                    <button type="button" id="rim-brief-ready">Бриф готов, продолжить</button>
-                </div>
+                <section class="rim-brief-help" id="rim-brief-help" aria-labelledby="rim-brief-title" <?= $briefAnswer === 'no' ? '' : 'hidden' ?>>
+                    <h2 id="rim-brief-title">Создайте бриф, чтобы продолжить</h2>
+                    <ol>
+                        <li><strong>Откройте мастер заполнения брифа.</strong> Он откроется в новой вкладке, а заявка останется в этой.</li>
+                        <li><strong>Заполните бриф по шагам.</strong> В конце мастер сформирует файл XLSX. Скачайте его.</li>
+                        <li><strong>Вернитесь в эту вкладку.</strong> Нажмите «Бриф готов, продолжить» и прикрепите скачанный файл в поле «Бриф».</li>
+                    </ol>
+                    <div class="rim-actions">
+                        <a class="rim-primary" href="/forms/marketing/brief_gen.html" target="_blank" rel="noopener">Открыть мастер в новой вкладке</a>
+                        <button type="button" class="rim-secondary" id="rim-brief-ready">Бриф готов, продолжить</button>
+                    </div>
+                </section>
                 <noscript><p>Включите JavaScript, чтобы перейти к заполнению заявки.</p></noscript>
             </fieldset>
 
