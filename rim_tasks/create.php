@@ -5,6 +5,7 @@ use Bitrix\Main\Loader;
 
 $listId = 322;
 $templateId = 865;
+$formPath = '/forms/marketing/rim_tasks/create.php';
 
 \Bitrix\Main\Context::getCurrent()->getResponse()->addHeader('Cache-Control', 'no-store');
 
@@ -236,7 +237,7 @@ if ($result && $result['started']) {
     LocalRedirect('/my_requests/my_requests.php', false, '303 See Other');
 }
 if ($result && $isPost) {
-    LocalRedirect('/rim_tasks/create.php?submitted=' . $token, false, '303 See Other');
+    LocalRedirect($formPath . '?submitted=' . $token, false, '303 See Other');
 }
 
 if ($available && !$result && (!$token || !$isPost)) {
@@ -292,10 +293,10 @@ $APPLICATION->SetTitle('Заявка на изготовление реклам�
                 <?php endforeach; ?>
             </ul>
             <p><a href="/bizproc/processes/322/element/0/<?= $h($result['id']) ?>/">Открыть заявку</a></p>
-            <a href="/rim_tasks/create.php">Создать ещё заявку</a>
+            <a href="<?= $h($formPath) ?>">Создать ещё заявку</a>
         </div>
     <?php elseif ($available): ?>
-        <form method="post" action="/rim_tasks/create.php" enctype="multipart/form-data">
+        <form method="post" action="<?= $h($formPath) ?>" enctype="multipart/form-data">
             <?= bitrix_sessid_post() ?>
             <input type="hidden" name="request_token" value="<?= $h($token) ?>">
             <fieldset class="rim-card">
